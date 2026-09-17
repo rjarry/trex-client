@@ -4,6 +4,7 @@
 package rpc
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -27,16 +28,23 @@ type Response struct {
 	Error   *RPCError       `json:"error"`
 }
 
-// RPCError is a JSON-RPC error object and satisfies the error interface.
+// RPCError is a JSON-RPC error object and satisfies the error interface. The
+// TRex server carries the human-readable reason in the non-standard
+// "specific_err" field rather than "data".
 type RPCError struct {
-	Code    int             `json:"code"`
-	Message string          `json:"message"`
-	Data    json.RawMessage `json:"data,omitempty"`
+	Code        int             `json:"code"`
+	Message     string          `json:"message"`
+	SpecificErr string          `json:"specific_err,omitempty"`
+	Data        json.RawMessage `json:"data,omitempty"`
 }
 
 func (e *RPCError) Error() string {
-	if len(e.Data) > 0 {
-		return fmt.Sprintf("rpc error %d: %s (%s)", e.Code, e.Message, e.Data)
+	detail := e.SpecificErr
+	if detail == "" && len(e.Data) > 0 {
+		detail = string(e.Data)
+	}
+	if detail != "" {
+		return fmt.Sprintf("rpc error %d: %s: %s", e.Code, e.Message, detail)
 	}
 	return fmt.Sprintf("rpc error %d: %s", e.Code, e.Message)
 }
@@ -85,8 +93,18 @@ func ParseResponse(data []byte) (*Response, error) {
 
 // ParseBatchResponse decodes a de-framed JSON-RPC batch reply. The server
 // returns results in the same order as the batch was sent, but callers should
-// match by id when order matters.
+// match by id when order matters. When a batch holds a single request the TRex
+// server replies with a bare response object rather than a one-element array, so
+// both encodings are accepted.
 func ParseBatchResponse(data []byte) ([]Response, error) {
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) > 0 && trimmed[0] == '{' {
+		var resp Response
+		if err := json.Unmarshal(trimmed, &resp); err != nil {
+			return nil, fmt.Errorf("parse batch response: %w", err)
+		}
+		return []Response{resp}, nil
+	}
 	var resps []Response
 	if err := json.Unmarshal(data, &resps); err != nil {
 		return nil, fmt.Errorf("parse batch response: %w", err)

@@ -27,12 +27,13 @@ type Commands struct {
 }
 
 // acquirePorts acquires the given ports on the client and records them on the
-// context, replacing any previously acquired set.
-func (c *Context) acquirePorts(ids []int) error {
+// context, replacing any previously acquired set. When force is set the ports
+// are taken even if owned by another user or session.
+func (c *Context) acquirePorts(ids []int, force bool) error {
 	ports := make([]*session.Port, 0, len(ids))
 	for _, id := range ids {
 		p := c.Client.Port(id)
-		if err := p.Acquire(false); err != nil {
+		if err := p.Acquire(force); err != nil {
 			return err
 		}
 		ports = append(ports, p)
@@ -45,6 +46,7 @@ type StreamsCmd struct {
 	Profile  string            `arg:"" completion:"file" help:"Profile to load (.py, .yaml, .pcap or snapshot)."`
 	Ports    []int             `short:"p" default:"0,1" help:"Ports to load the profile onto."`
 	Tunables map[string]string `short:"t" help:"Profile tunable key=value (repeatable)."`
+	Force    bool              `short:"f" help:"Force-acquire ports even if owned by another session."`
 }
 
 func (c *StreamsCmd) Run(cc *Context) error {
@@ -56,7 +58,7 @@ func (c *StreamsCmd) Run(cc *Context) error {
 	if err != nil {
 		return err
 	}
-	if err := cc.acquirePorts(c.Ports); err != nil {
+	if err := cc.acquirePorts(c.Ports, c.Force); err != nil {
 		return err
 	}
 	for _, p := range cc.Ports {
@@ -150,6 +152,7 @@ type NDRCmd struct {
 	Out      string            `short:"o" help:"Write full results as JSON to this file."`
 	Ports    []int             `short:"p" default:"0,1" help:"Ports to run the search on."`
 	Tunables map[string]string `short:"t" help:"Profile tunable key=value (repeatable)."`
+	Force    bool              `short:"f" help:"Force-acquire ports even if owned by another session."`
 }
 
 func (c *NDRCmd) Run(ctx context.Context, cc *Context) error {
@@ -163,7 +166,7 @@ func (c *NDRCmd) Run(ctx context.Context, cc *Context) error {
 	if err != nil {
 		return err
 	}
-	if err := cc.acquirePorts(c.Ports); err != nil {
+	if err := cc.acquirePorts(c.Ports, c.Force); err != nil {
 		return err
 	}
 	for _, p := range cc.Ports {

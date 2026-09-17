@@ -60,3 +60,18 @@ func TestParseBatchWithPerItemError(t *testing.T) {
 		t.Fatalf("item 1 code = %d, want -32000", resps[1].Error.Code)
 	}
 }
+
+// A batch of one request is answered by TRex with a bare object, not an array.
+func TestParseBatchSingleObject(t *testing.T) {
+	data := []byte(`{"jsonrpc":"2.0","id":"1","result":true}`)
+	resps, err := ParseBatchResponse(data)
+	if err != nil {
+		t.Fatalf("ParseBatchResponse: %v", err)
+	}
+	if len(resps) != 1 {
+		t.Fatalf("got %d responses, want 1", len(resps))
+	}
+	if resps[0].Error != nil {
+		t.Fatalf("unexpected error: %v", resps[0].Error)
+	}
+}
