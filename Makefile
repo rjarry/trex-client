@@ -2,6 +2,14 @@
 # Copyright (c) 2026 Robin Jarry
 
 TREX_CLIENT_VERSION ?= $(shell git describe --long --abbrev=8 --dirty 2>/dev/null || echo v1.0.0)
+DATE_FMT = +%Y-%m-%d
+ifdef SOURCE_DATE_EPOCH
+DATE ?= $(shell date -u -d "@$(SOURCE_DATE_EPOCH)" "$(DATE_FMT)" 2>/dev/null || \
+		date -u -r "$(SOURCE_DATE_EPOCH)" "$(DATE_FMT)" 2>/dev/null || \
+		date -u "$(DATE_FMT)")
+else
+DATE ?= $(shell date "$(DATE_FMT)")
+endif
 
 GO ?= go
 V ?= 0
@@ -10,6 +18,15 @@ Q =
 else
 Q = @
 endif
+
+GO_LDFLAGS += -X main.Version=$(TREX_CLIENT_VERSION)
+GO_LDFLAGS += -X main.Date=$(DATE)
+
+.PHONY: all
+all: trexc
+
+trexc: $(shell git ls-files '*.go')
+	$(GO) build -trimpath -ldflags "$(GO_LDFLAGS)" -o $@ ./cmd/$@
 
 import_reviser ?= github.com/incu6us/goimports-reviser/v3@v3.12.6
 import_reviser_flags ?= -rm-unused -project-name github.com/rjarry/trex-client
