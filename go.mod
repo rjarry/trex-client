@@ -1,17 +1,23 @@
 module github.com/rjarry/trex-client
 
-go 1.25.0
+go 1.26.0
 
 require (
+	github.com/alecthomas/kong v1.16.1
 	github.com/go-zeromq/zmq4 v0.17.0
 	github.com/gopacket/gopacket v1.7.2
+	github.com/reeflective/readline v1.3.0
+	go.rockorager.dev/vaxis v0.17.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	github.com/go-zeromq/goczmq/v4 v4.2.2 // indirect
-	golang.org/x/net v0.55.0 // indirect
-	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/rockorager/go-uucode v1.2.2 // indirect
+	golang.org/x/net v0.59.0 // indirect
+	golang.org/x/sync v0.23.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/term v0.46.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 )

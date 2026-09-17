@@ -1,0 +1,8 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Robin Jarry
+
+# The trexc binary serves its own completions via the COMP_LINE protocol.
+# File paths are left to readline's native completion (-o default) so that
+# directories do not get a trailing space, allowing incremental descent.
+complete -o default -C trexc trexc
