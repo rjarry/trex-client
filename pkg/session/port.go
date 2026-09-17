@@ -47,6 +47,9 @@ func (c *Client) Port(id int) *Port {
 
 func (p *Port) conn() *rpc.Connection { return p.client.conn }
 
+// ID returns the port id.
+func (p *Port) ID() int { return p.id }
+
 // Acquire takes ownership of the port and stores the returned handler used on
 // all later mutating calls.
 func (p *Port) Acquire(force bool) error {
