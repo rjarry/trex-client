@@ -96,6 +96,22 @@ type ResolvedStream struct {
 	JSON json.RawMessage
 }
 
+// EnsureFlowStats assigns per-stream flow-statistics rules to any non-dummy
+// stream that lacks them, allocating consecutive pg ids from startPGID. NDR
+// needs every test stream tagged so exact per-pgid tx/rx counts are available.
+// It returns the next free pg id.
+func (p Profile) EnsureFlowStats(startPGID int) int {
+	pg := startPGID
+	for _, s := range p {
+		if s.Dummy || s.Stats.Enabled {
+			continue
+		}
+		s.Stats = FlowStats{Enabled: true, PGID: pg, RuleType: FSStats}
+		pg++
+	}
+	return pg
+}
+
 // flags packs the mac-override and dummy bits the same way the server expects.
 func (s *Stream) flags() int {
 	f := 0
