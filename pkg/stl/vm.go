@@ -17,6 +17,20 @@ type VM struct {
 	Cache        *int            `json:"cache,omitempty"`
 }
 
+// RawInstruction carries an already-serialized instruction object verbatim. It
+// lets the snapshot loader pass through a frozen VM without re-deriving it.
+type RawInstruction json.RawMessage
+
+func (RawInstruction) instruction() {}
+
+// MarshalJSON emits the raw instruction bytes unchanged.
+func (r RawInstruction) MarshalJSON() ([]byte, error) {
+	if len(r) == 0 {
+		return []byte("null"), nil
+	}
+	return r, nil
+}
+
 // L4 checksum types for fix_checksum_hw.
 const (
 	L4TypeUDP = 11

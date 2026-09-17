@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Robin Jarry
+#
+# Classic IMIX: three frame sizes mixed by weight (7:4:1). The imix shortcut
+# expands to one stream per row and splits the rate proportionally.
+- imix:
+    - {size: 64, weight: 7}
+    - {size: 594, weight: 4}
+    - {size: 1518, weight: 1}
+  packet:
+    layers:
+      - eth: {}
+      - ip: {src: 16.0.0.1, dst: 48.0.0.1}
+      - udp: {sport: 1025, dport: 12}
+  mode: {type: continuous, rate: {type: percentage, value: 100}}
