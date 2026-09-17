@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Robin Jarry
+#
+# name: IPv4 + IPv6 dual-stack forwarding
+#
+# Two 64-byte streams per direction, one IPv4 and one IPv6, at equal rate. Each
+# stream sweeps its UDP source port to spread the traffic over many flows.
+- direction: 0
+  packet:
+    layers:
+      - eth: {src: "02:00:00:00:01:00", dst: "02:00:00:00:00:00"}
+      - ip: {src: 16.0.0.1, dst: 48.0.0.1}
+      - udp: {sport: 1024, dport: 1024, chksum: 0}
+    payload_size: 18
+  mode: {type: continuous, rate: {type: percentage, value: 50}}
+  vm:
+    - flow_var: {name: sport, op: inc, min: 1024, max: 65535, size: 2}
+    - write_flow_var: {name: sport, offset: UDP.sport}
+- direction: 0
+  packet:
+    layers:
+      - eth: {src: "02:00:00:00:01:00", dst: "02:00:00:00:00:00"}
+      - ipv6: {src: "fd00:100::1", dst: "fd00:200::1"}
+      - udp: {sport: 1024, dport: 1024}
+  mode: {type: continuous, rate: {type: percentage, value: 50}}
+  vm:
+    - flow_var: {name: sport, op: inc, min: 1024, max: 65535, size: 2}
+    - write_flow_var: {name: sport, offset: UDP.sport}
+- direction: 1
+  packet:
+    layers:
+      - eth: {src: "02:00:00:00:01:01", dst: "02:00:00:00:00:01"}
+      - ip: {src: 48.0.0.1, dst: 16.0.0.1}
+      - udp: {sport: 1024, dport: 1024, chksum: 0}
+    payload_size: 18
+  mode: {type: continuous, rate: {type: percentage, value: 50}}
+  vm:
+    - flow_var: {name: sport, op: inc, min: 1024, max: 65535, size: 2}
+    - write_flow_var: {name: sport, offset: UDP.sport}
+- direction: 1
+  packet:
+    layers:
+      - eth: {src: "02:00:00:00:01:01", dst: "02:00:00:00:00:01"}
+      - ipv6: {src: "fd00:200::1", dst: "fd00:100::1"}
+      - udp: {sport: 1024, dport: 1024}
+  mode: {type: continuous, rate: {type: percentage, value: 50}}
+  vm:
+    - flow_var: {name: sport, op: inc, min: 1024, max: 65535, size: 2}
+    - write_flow_var: {name: sport, offset: UDP.sport}

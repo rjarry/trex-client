@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Robin Jarry
+#
+# name: VXLAN L2VPN, IPv4 underlay
+#
+# Asymmetric L2VPN profile with an IPv4 underlay:
+#   direction 0 (TRex port 0 -> grout p0): VXLAN frame, grout decaps and bridges
+#     the inner Ethernet frame out the access port p1;
+#   direction 1 (TRex port 1 -> grout p1): plain Ethernet frame, grout bridges it
+#     into the tunnel and VXLAN-encaps it out p0.
+#
+# The inner customer frame is 64 bytes on the wire in both directions; the
+# encapsulated frame adds the outer Ethernet/IP/UDP/VXLAN headers.
+#
+# Flow spreading (both are source UDP ports, one per emulated client):
+#   - decap direction: the outer VXLAN UDP source port is swept (the RSS key on
+#     grout's receive side). grout does not verify the outer UDP checksum over an
+#     IPv4 underlay, so the swept port needs no recompute;
+#   - encap direction: the customer UDP source port is swept; grout derives the
+#     outer VXLAN source port from the inner flow hash, so this spreads the
+#     encapsulated traffic on the wire.
+- direction: 0
+  packet:
+    layers:
+      - eth: {src: "02:00:00:00:01:00", dst: "02:00:00:00:00:00"}
+      - ip: {src: 172.16.0.2, dst: 172.16.0.1}
+      - udp: {sport: 1024, dport: 4789, chksum: 0}
+      - vxlan: {vni: 100}
+      - eth: {src: "02:00:00:00:0c:00", dst: "02:00:00:00:0c:01"}
+      - ip: {src: 16.0.0.1, dst: 48.0.0.1}
+      - udp: {sport: 1024, dport: 1024, chksum: 0}
+    payload_size: 18
+  mode: {type: continuous, rate: {type: percentage, value: 100}}
+  vm:
+    - flow_var: {name: sport, op: inc, min: 1024, max: 65535, size: 2}
+    - write_flow_var: {name: sport, offset: UDP.sport}
+- direction: 1
+  packet:
+    layers:
+      - eth: {src: "02:00:00:00:0c:01", dst: "02:00:00:00:0c:00"}
+      - ip: {src: 48.0.0.1, dst: 16.0.0.1}
+      - udp: {sport: 1024, dport: 1024, chksum: 0}
+    payload_size: 18
+  mode: {type: continuous, rate: {type: percentage, value: 100}}
+  vm:
+    - flow_var: {name: sport, op: inc, min: 1024, max: 65535, size: 2}
+    - write_flow_var: {name: sport, offset: UDP.sport}

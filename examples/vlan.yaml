@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Robin Jarry
+#
+# name: VLAN 802.1Q IPv4 forwarding
+#
+# 802.1Q-tagged IPv4/UDP frames. Ether(14) + Dot1Q(4) + IP(20) + UDP(8) = 46
+# bytes, padded to 64 on the wire. VLAN 100 on p0, VLAN 200 on p1. A field-engine
+# variable sweeps the UDP source port to spread the traffic over many flows.
+- direction: 0
+  packet:
+    layers:
+      - eth: {src: "02:00:00:00:01:00", dst: "02:00:00:00:00:00"}
+      - dot1q: {vlan: 100}
+      - ip: {src: 16.0.0.1, dst: 48.0.0.1}
+      - udp: {sport: 1024, dport: 1024, chksum: 0}
+    payload_size: 14
+  mode: {type: continuous, rate: {type: percentage, value: 100}}
+  vm:
+    - flow_var: {name: sport, op: inc, min: 1024, max: 65535, size: 2}
+    - write_flow_var: {name: sport, offset: UDP.sport}
+- direction: 1
+  packet:
+    layers:
+      - eth: {src: "02:00:00:00:01:01", dst: "02:00:00:00:00:01"}
+      - dot1q: {vlan: 200}
+      - ip: {src: 48.0.0.1, dst: 16.0.0.1}
+      - udp: {sport: 1024, dport: 1024, chksum: 0}
+    payload_size: 14
+  mode: {type: continuous, rate: {type: percentage, value: 100}}
+  vm:
+    - flow_var: {name: sport, op: inc, min: 1024, max: 65535, size: 2}
+    - write_flow_var: {name: sport, offset: UDP.sport}

@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Robin Jarry
+#
+# name: VXLAN L3VPN, IPv6 underlay
+#
+# Same asymmetric L3VPN profile as vxlan_l3vpn_ipv4 but with an IPv6 underlay
+# (outer IPv6 header). The overlay and customer traffic stay IPv4.
+#
+#   direction 0 (TRex port 0 -> grout p0): VXLAN frame whose inner Ethernet is
+#     addressed to grout's local RMAC; grout decaps, routes the inner IPv4 packet
+#     toward the customer subnet and sends it plain out p1;
+#   direction 1 (TRex port 1 -> grout p1): plain IPv4 packet toward the overlay
+#     subnet; grout routes it to the remote next hop and VXLAN-encaps it out p0.
+#
+# Flow spreading:
+#   - decap direction: the outer VXLAN UDP source port is swept. Over an IPv6
+#     underlay grout verifies the outer UDP checksum, so checksum_sweep keeps it
+#     valid in lockstep with the swept port;
+#   - encap direction: the customer UDP source port is swept; grout derives the
+#     outer VXLAN source port from the inner flow hash.
+- direction: 0
+  packet:
+    layers:
+      - eth: {src: "02:00:00:00:01:00", dst: "02:00:00:00:00:00"}
+      - ipv6: {src: "fd00:0::2", dst: "fd00:0::1"}
+      - udp: {sport: 1024, dport: 4789}
+      - vxlan: {vni: 100}
+      - eth: {src: "02:00:00:00:0b:01", dst: "02:00:00:00:0b:00"}
+      - ip: {src: 16.0.0.1, dst: 48.0.0.1}
+      - udp: {sport: 1024, dport: 1024, chksum: 0}
+    payload_size: 18
+  mode: {type: continuous, rate: {type: percentage, value: 100}}
+  vm:
+    - checksum_sweep: {offset: UDP.sport, checksum: UDP.chksum, min: 1024}
+- direction: 1
+  packet:
+    layers:
+      - eth: {src: "02:00:00:00:01:01", dst: "02:00:00:00:00:01"}
+      - ip: {src: 48.0.0.1, dst: 16.0.0.1}
+      - udp: {sport: 1024, dport: 1024, chksum: 0}
+    payload_size: 18
+  mode: {type: continuous, rate: {type: percentage, value: 100}}
+  vm:
+    - flow_var: {name: sport, op: inc, min: 1024, max: 65535, size: 2}
+    - write_flow_var: {name: sport, offset: UDP.sport}

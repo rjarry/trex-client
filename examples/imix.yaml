@@ -1,0 +1,82 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Robin Jarry
+#
+# name: IPv4 IMIX forwarding
+#
+# Standard Internet MIX: three IPv4/UDP streams per direction with sizes
+# 60 / 590 / 1514 bytes weighted 28 / 16 / 4 (based on the TRex upstream imix.py
+# example). Each stream sweeps its UDP source port so the load spreads over many
+# flows (and thus over the receive queues). The relative pps values set the
+# weighting; the NDR multiplier scales them together.
+- direction: 0
+  isg: 0.0
+  packet:
+    layers:
+      - eth: {src: "02:00:00:00:01:00", dst: "02:00:00:00:00:00"}
+      - ip: {src: 16.0.0.1, dst: 48.0.0.1}
+      - udp: {sport: 1024, dport: 1024, chksum: 0}
+    payload_size: 18
+  mode: {type: continuous, rate: {type: pps, value: 28}}
+  vm:
+    - flow_var: {name: sport, op: inc, min: 1024, max: 65535, size: 2}
+    - write_flow_var: {name: sport, offset: UDP.sport}
+- direction: 0
+  isg: 0.1
+  packet:
+    layers:
+      - eth: {src: "02:00:00:00:01:00", dst: "02:00:00:00:00:00"}
+      - ip: {src: 16.0.0.1, dst: 48.0.0.1}
+      - udp: {sport: 1024, dport: 1024, chksum: 0}
+    payload_size: 548
+  mode: {type: continuous, rate: {type: pps, value: 16}}
+  vm:
+    - flow_var: {name: sport, op: inc, min: 1024, max: 65535, size: 2}
+    - write_flow_var: {name: sport, offset: UDP.sport}
+- direction: 0
+  isg: 0.2
+  packet:
+    layers:
+      - eth: {src: "02:00:00:00:01:00", dst: "02:00:00:00:00:00"}
+      - ip: {src: 16.0.0.1, dst: 48.0.0.1}
+      - udp: {sport: 1024, dport: 1024, chksum: 0}
+    payload_size: 1472
+  mode: {type: continuous, rate: {type: pps, value: 4}}
+  vm:
+    - flow_var: {name: sport, op: inc, min: 1024, max: 65535, size: 2}
+    - write_flow_var: {name: sport, offset: UDP.sport}
+- direction: 1
+  isg: 0.0
+  packet:
+    layers:
+      - eth: {src: "02:00:00:00:01:01", dst: "02:00:00:00:00:01"}
+      - ip: {src: 48.0.0.1, dst: 16.0.0.1}
+      - udp: {sport: 1024, dport: 1024, chksum: 0}
+    payload_size: 18
+  mode: {type: continuous, rate: {type: pps, value: 28}}
+  vm:
+    - flow_var: {name: sport, op: inc, min: 1024, max: 65535, size: 2}
+    - write_flow_var: {name: sport, offset: UDP.sport}
+- direction: 1
+  isg: 0.1
+  packet:
+    layers:
+      - eth: {src: "02:00:00:00:01:01", dst: "02:00:00:00:00:01"}
+      - ip: {src: 48.0.0.1, dst: 16.0.0.1}
+      - udp: {sport: 1024, dport: 1024, chksum: 0}
+    payload_size: 548
+  mode: {type: continuous, rate: {type: pps, value: 16}}
+  vm:
+    - flow_var: {name: sport, op: inc, min: 1024, max: 65535, size: 2}
+    - write_flow_var: {name: sport, offset: UDP.sport}
+- direction: 1
+  isg: 0.2
+  packet:
+    layers:
+      - eth: {src: "02:00:00:00:01:01", dst: "02:00:00:00:00:01"}
+      - ip: {src: 48.0.0.1, dst: 16.0.0.1}
+      - udp: {sport: 1024, dport: 1024, chksum: 0}
+    payload_size: 1472
+  mode: {type: continuous, rate: {type: pps, value: 4}}
+  vm:
+    - flow_var: {name: sport, op: inc, min: 1024, max: 65535, size: 2}
+    - write_flow_var: {name: sport, offset: UDP.sport}
