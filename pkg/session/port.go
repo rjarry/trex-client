@@ -19,10 +19,12 @@ const DefaultProfileID = "_"
 const maskAll uint64 = (1 << 64) - 1
 
 // Mult is a start/update traffic multiplier. Type is one of raw, bps, pps or
-// percentage.
+// percentage. Op is the operation the server applies (abs/add/sub); start
+// requires abs while update accepts all three. An empty Op defaults to abs.
 type Mult struct {
 	Type  string  `json:"type"`
 	Value float64 `json:"value"`
+	Op    string  `json:"op"`
 }
 
 // Mult type constants.
@@ -31,6 +33,13 @@ const (
 	MultBPS        = "bps"
 	MultPPS        = "pps"
 	MultPercentage = "percentage"
+)
+
+// Mult op constants.
+const (
+	MultOpAbs = "abs"
+	MultOpAdd = "add"
+	MultOpSub = "sub"
 )
 
 // Port controls a single server port: acquisition, stream loading and traffic.
@@ -120,6 +129,9 @@ func (p *Port) AddStreams(streams []stl.ResolvedStream) error {
 // duration makes the server stop itself after that many seconds and emit the
 // job-done event. startAtTs synchronizes multi-port starts (0 = immediate).
 func (p *Port) Start(mul Mult, duration float64, force bool, startAtTs float64) error {
+	if mul.Op == "" {
+		mul.Op = MultOpAbs
+	}
 	_, err := p.conn().Call("start_traffic", map[string]any{
 		"handler":     p.handler,
 		"port_id":     p.id,
@@ -172,6 +184,9 @@ func (p *Port) Resume() error {
 // Update changes the transmit multiplier of a running port. NDR uses this for
 // rate ramp-up.
 func (p *Port) Update(mul Mult, force bool) error {
+	if mul.Op == "" {
+		mul.Op = MultOpAbs
+	}
 	_, err := p.conn().Call("update_traffic", map[string]any{
 		"handler":    p.handler,
 		"port_id":    p.id,
